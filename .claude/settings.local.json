@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude mcp add-json convex '{\"\"type\"\":\"\"stdio\"\",\"\"command\"\":\"\"npx\"\",\"\"args\"\":[\"\"convex\"\",\"\"mcp\"\",\"\"start\"\"]}')",
+      "Bash(claude mcp get:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
