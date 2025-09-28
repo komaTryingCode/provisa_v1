@@ -14,7 +14,10 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as bot from "../bot.js";
+import type * as greenCardBot from "../greenCardBot.js";
 import type * as http from "../http.js";
+import type * as messageUtils from "../messageUtils.js";
+import type * as nudges from "../nudges.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -26,7 +29,10 @@ import type * as http from "../http.js";
  */
 declare const fullApi: ApiFromModules<{
   bot: typeof bot;
+  greenCardBot: typeof greenCardBot;
   http: typeof http;
+  messageUtils: typeof messageUtils;
+  nudges: typeof nudges;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
