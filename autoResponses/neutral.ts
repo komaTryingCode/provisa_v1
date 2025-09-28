@@ -14,9 +14,9 @@ export const neutral = {
   languageButtons: {
     uz: "🇺🇿 O'zbek",
     ru: "🇷🇺 Русский",
-    kk: "🇰🇿 Qaraqalpaqsha"
+    kk: "🇰🇿 Qaraqalpaqsha",
   },
 
-  reminderLanguage: `Iltimos, quyidagi tugmalardan birini bosib tilni tanlang 👇
-Пожалуйста, выберите язык, нажав на одну из кнопок ниже 👇`
+  reminderLanguage: `Iltimos, quyidagi tugmalardan birini bosib tilni tanlang. 🇺🇿
+Пожалуйста, выберите язык, нажав одну из кнопок. 🇷🇺`,
 };

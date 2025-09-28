@@ -2,41 +2,96 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { api } from "./_generated/api";
 import { isPhoneNumber } from "./messageUtils";
+import type { Doc } from "./_generated/dataModel";
+
+// Derive the Convex HTTP action context type without resorting to any
+type HttpCtx = Parameters<Parameters<typeof httpAction>[0]>[0];
+
+type LeadDoc = Doc<"leads">;
+
+type TelegramUser = {
+  id: number;
+  is_bot?: boolean;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+};
+
+type TelegramChat = {
+  id: number;
+  type: string;
+};
+
+type TelegramContact = {
+  phone_number: string;
+};
+
+type TelegramMessage = {
+  message_id: number;
+  from: TelegramUser;
+  chat: TelegramChat;
+  text?: string;
+  contact?: TelegramContact;
+};
+
+type TelegramCallbackQuery = {
+  id: string;
+  from: TelegramUser;
+  message: TelegramMessage;
+  data?: string;
+};
+
+type TelegramUpdate = {
+  update_id?: number;
+  message?: TelegramMessage;
+  callback_query?: TelegramCallbackQuery;
+};
 
 const http = httpRouter();
 
-// Comprehensive Telegram webhook handler for Green Card consultation funnel
+// Telegram webhook handler with stricter error handling and minimal logging
 const telegramWebhook = httpAction(async (ctx, request) => {
   if (request.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
 
+  let update: TelegramUpdate;
   try {
-    const update = await request.json();
-    console.log("Telegram update:", JSON.stringify(update, null, 2));
+    update = (await request.json()) as TelegramUpdate;
+  } catch (error) {
+    console.error("Failed to parse Telegram webhook payload", error);
+    return new Response("Invalid payload", { status: 400 });
+  }
 
-    // Handle different types of updates
+  const summary = {
+    hasMessage: Boolean(update.message),
+    hasCallback: Boolean(update.callback_query),
+    chatId: update.message?.chat.id ?? update.callback_query?.message.chat.id,
+  };
+
+  try {
     if (update.message) {
       await handleMessage(ctx, update.message);
     } else if (update.callback_query) {
       await handleCallbackQuery(ctx, update.callback_query);
+    } else {
+      console.warn("Unhandled Telegram update", summary);
     }
 
     return new Response("OK", { status: 200 });
   } catch (error) {
-    console.error("Webhook error:", error);
-    return new Response("OK", { status: 200 }); // Always return 200 to Telegram
+    console.error("Telegram webhook handler error", { error, summary });
+    return new Response("Failed to process webhook", { status: 500 });
   }
 });
 
 // Handle regular messages
-async function handleMessage(ctx: any, message: any) {
+async function handleMessage(ctx: HttpCtx, message: TelegramMessage): Promise<void> {
   const user = message.from;
   const chatId = message.chat.id;
-  const text = message.text;
+  const text = message.text?.trim();
 
-  // Handle /start command
-  if (text && text.startsWith("/start")) {
+  if (text?.startsWith("/start")) {
     const result = await ctx.runMutation(api.greenCardBot.handleStart, {
       telegramId: user.id,
       firstName: user.first_name,
@@ -48,15 +103,14 @@ async function handleMessage(ctx: any, message: any) {
 
     if (result.action !== "debounced") {
       await ctx.runAction(api.greenCardBot.sendGreeting, {
-        chatId: chatId,
+        chatId,
         firstName: user.first_name,
-        hasLanguage: !!result.language,
+        hasLanguage: Boolean(result.language),
       });
     }
     return;
   }
 
-  // Handle contact sharing
   if (message.contact) {
     await ctx.runMutation(api.greenCardBot.handlePhoneCapture, {
       telegramId: user.id,
@@ -64,31 +118,29 @@ async function handleMessage(ctx: any, message: any) {
       isContact: true,
     });
 
-    const lead = await ctx.runMutation(api.greenCardBot.getLeadByTelegramId, {
+    const lead = await ctx.runQuery(api.greenCardBot.getLeadByTelegramId, {
       telegramId: user.id,
-    });
+    }) as LeadDoc | null;
 
     if (lead?.language) {
       await ctx.runAction(api.greenCardBot.sendCityRequest, {
-        chatId: chatId,
+        chatId,
         language: lead.language,
       });
     }
     return;
   }
 
-  // Handle regular text messages
   if (text && !text.startsWith("/")) {
-    const lead = await ctx.runMutation(api.greenCardBot.getLeadByTelegramId, {
+    const lead = await ctx.runQuery(api.greenCardBot.getLeadByTelegramId, {
       telegramId: user.id,
-    });
+    }) as LeadDoc | null;
 
     if (!lead) {
-      // No lead found, suggest starting over
+      console.warn("Text message without lead", { chatId, telegramId: user.id });
       return;
     }
 
-    // Handle phone number as text (fallback)
     if (lead.conversationStage === "language_selection" && !lead.phoneNumber) {
       if (isPhoneNumber(text)) {
         await ctx.runMutation(api.greenCardBot.handlePhoneCapture, {
@@ -99,15 +151,14 @@ async function handleMessage(ctx: any, message: any) {
 
         if (lead.language) {
           await ctx.runAction(api.greenCardBot.sendCityRequest, {
-            chatId: chatId,
+            chatId,
             language: lead.language,
           });
         }
-        return;
       }
+      return;
     }
 
-    // Handle city input
     if (lead.conversationStage === "qualification" && lead.phoneNumber && !lead.city) {
       await ctx.runMutation(api.greenCardBot.handleCityCapture, {
         telegramId: user.id,
@@ -116,43 +167,45 @@ async function handleMessage(ctx: any, message: any) {
 
       if (lead.language) {
         await ctx.runAction(api.greenCardBot.sendFinalMessage, {
-          chatId: chatId,
+          chatId,
           language: lead.language,
         });
       }
-      return;
     }
   }
 }
 
 // Handle callback queries (inline button presses)
-async function handleCallbackQuery(ctx: any, callbackQuery: any) {
+async function handleCallbackQuery(ctx: HttpCtx, callbackQuery: TelegramCallbackQuery): Promise<void> {
   const user = callbackQuery.from;
   const chatId = callbackQuery.message.chat.id;
   const data = callbackQuery.data;
 
-  // Handle language selection
-  if (data.startsWith("lang_")) {
+  if (data?.startsWith("lang_")) {
     const language = data.replace("lang_", "") as "uz" | "ru" | "kk";
 
     await ctx.runMutation(api.greenCardBot.handleLanguageSelection, {
       telegramId: user.id,
-      language: language,
+      language,
     });
 
     await ctx.runAction(api.greenCardBot.sendPhoneRequest, {
-      chatId: chatId,
-      language: language,
+      chatId,
+      language,
     });
 
-    // Answer the callback query to remove loading state
-    await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+    const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         callback_query_id: callbackQuery.id,
       }),
     });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to answer callback query (${response.status}): ${errorText}`);
+    }
   }
 }
 
@@ -166,7 +219,7 @@ http.route({
   path: "/health",
   method: "GET",
   handler: httpAction(async () => {
-    return new Response("Green Card Bot is running! 🇺🇸", { status: 200 });
+    return new Response("Green Card Bot is running! \u{1F680}", { status: 200 });
   }),
 });
 

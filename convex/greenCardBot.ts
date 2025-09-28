@@ -1,4 +1,4 @@
-import { mutation, action } from "./_generated/server";
+import { mutation, action, query } from "./_generated/server";
 import { api } from "./_generated/api";
 import { v } from "convex/values";
 import { neutral } from "../autoResponses/neutral";
@@ -9,8 +9,16 @@ import {
   removeKeyboard,
   parseStartPayload,
   normalizePhoneNumber,
-  isPhoneNumber,
 } from "./messageUtils";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const jitterDelay = async (minMs: number, maxMs: number) => {
+  const span = maxMs - minMs;
+  const delay = span > 0 ? Math.floor(Math.random() * (span + 1)) + minMs : minMs;
+  await sleep(delay);
+};
+
 
 // Mutation to handle /start command and lead creation/update
 export const handleStart = mutation({
@@ -168,7 +176,7 @@ export const handleCityCapture = mutation({
 });
 
 // Query to get lead by telegram ID
-export const getLeadByTelegramId = mutation({
+export const getLeadByTelegramId = query({
   args: { telegramId: v.number() },
   handler: async (ctx, args) => {
     return await ctx.db
@@ -194,8 +202,7 @@ export const sendGreeting = action({
     await ctx.runAction(api.bot.showTyping, { chatId: args.chatId });
 
     // Random delay between 2-4 seconds for greeting
-    const delay = Math.floor(Math.random() * 2000) + 2000;
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await jitterDelay(200, 500);
 
     const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",
@@ -226,8 +233,7 @@ export const sendPhoneRequest = action({
 
     await ctx.runAction(api.bot.showTyping, { chatId: args.chatId });
 
-    const delay = Math.floor(Math.random() * 1500) + 1000;
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await jitterDelay(150, 400);
 
     const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",
@@ -258,8 +264,7 @@ export const sendCityRequest = action({
 
     await ctx.runAction(api.bot.showTyping, { chatId: args.chatId });
 
-    const delay = Math.floor(Math.random() * 1500) + 1000;
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await jitterDelay(150, 400);
 
     const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",
@@ -290,8 +295,7 @@ export const sendFinalMessage = action({
 
     await ctx.runAction(api.bot.showTyping, { chatId: args.chatId });
 
-    const delay = Math.floor(Math.random() * 2000) + 1500;
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await jitterDelay(200, 600);
 
     const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",

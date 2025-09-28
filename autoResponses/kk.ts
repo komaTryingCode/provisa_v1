@@ -1,10 +1,11 @@
 // Karakalpak language messages
 
 export default {
-  askPhone: "Ótinemiz, telefon nomerinizdi jiberip beriń. 📱",
+  contactButton: "📞 Nomerdi bólishiw",
+  askPhone: "Ótinemiz, telefon nomerińizdi jiberiń. 📱",
   askCity: "Qaysi qaladan jazıp atırsız?",
-  final: "Jaqsı! Málimetleriniz qabıl qılındı. Házirlik bunı jetedi. Biz sizben keyin baylanısamız ✨",
-  reminderLanguage: "Ótinemiz, tómendegi túymelerden bireuwin basıp tildi tañlań 👇",
-  reminderPhone: "Telefon nomerinizdi jiberiwdi unutpań 😊",
-  reminderCity: "Qaydan ekenin jazıp jiberiń, ótinemiz."
+  final: "Jaqsı! Málimetlerińiz qabıl qılındı. Biz keyin baylanısamız. 😊",
+  reminderLanguage: "Ótinemiz, tömendegi tüymelerden birin basıp tildi tańlań. 🇰🇿",
+  reminderPhone: "Telefon nomerińizdi jiberiwdı unıtpań. ⏳",
+  reminderCity: "Qay jerden ekenińizdi jazıp jiberiń, ótinemiz.",
 };

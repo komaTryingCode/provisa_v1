@@ -41,18 +41,11 @@ export function buildLanguageKeyboard() {
 export function buildContactKeyboard(language?: Language) {
   const pack = getMessagePack(language);
 
-  // Use appropriate contact button text based on language
-  const contactButtonText = language === "ru"
-    ? "📱 Поделиться номером"
-    : language === "kk"
-    ? "📱 Nomer bólistiriw"
-    : "📱 Raqamni ulashish"; // Uzbek default
-
   return {
     keyboard: [
       [
         {
-          text: contactButtonText,
+          text: pack.contactButton,
           request_contact: true,
         },
       ],

@@ -1,8 +1,19 @@
-import { mutation, action, internalMutation, internalAction } from "./_generated/server";
+import { mutation, action, internalMutation, internalAction, internalQuery } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
+import type { Doc } from "./_generated/dataModel";
 import { neutral } from "../autoResponses/neutral";
 import { getMessagePack, buildLanguageKeyboard, buildContactKeyboard } from "./messageUtils";
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const jitterDelay = async (minMs: number, maxMs: number) => {
+  const span = maxMs - minMs;
+  const delay = span > 0 ? Math.floor(Math.random() * (span + 1)) + minMs : minMs;
+  await sleep(delay);
+};
+
+type LeadDoc = Doc<"leads">;
+
 
 // Internal mutation to increment reminder counters
 export const incrementReminderCounter = internalMutation({
@@ -18,7 +29,7 @@ export const incrementReminderCounter = internalMutation({
 
     if (!lead) return null;
 
-    const updates: any = { lastContactAt: Date.now() };
+    const updates: Partial<LeadDoc> & { lastContactAt: number } = { lastContactAt: Date.now() };
 
     switch (args.type) {
       case "language":
@@ -106,8 +117,7 @@ export const sendLanguageReminder = internalAction({
     // Send reminder with typing
     await ctx.runAction(api.bot.showTyping, { chatId: args.chatId });
 
-    const delay = Math.floor(Math.random() * 1000) + 500;
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await jitterDelay(120, 300);
 
     const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",
@@ -156,8 +166,7 @@ export const sendPhoneReminder = internalAction({
     // Send reminder with typing
     await ctx.runAction(api.bot.showTyping, { chatId: args.chatId });
 
-    const delay = Math.floor(Math.random() * 1000) + 500;
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await jitterDelay(120, 300);
 
     const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",
@@ -207,8 +216,7 @@ export const sendCityReminder = internalAction({
     // Send reminder with typing
     await ctx.runAction(api.bot.showTyping, { chatId: args.chatId });
 
-    const delay = Math.floor(Math.random() * 1000) + 500;
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await jitterDelay(120, 300);
 
     const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",
@@ -228,7 +236,7 @@ export const sendCityReminder = internalAction({
 });
 
 // Internal query to find leads needing language reminders
-export const getLanguageReminderLeads = internalMutation({
+export const getLanguageReminderLeads = internalQuery({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
@@ -248,7 +256,7 @@ export const getLanguageReminderLeads = internalMutation({
 });
 
 // Internal query to find leads needing phone reminders
-export const getPhoneReminderLeads = internalMutation({
+export const getPhoneReminderLeads = internalQuery({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
@@ -268,7 +276,7 @@ export const getPhoneReminderLeads = internalMutation({
 });
 
 // Internal query to find leads needing city reminders
-export const getCityReminderLeads = internalMutation({
+export const getCityReminderLeads = internalQuery({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
@@ -296,9 +304,9 @@ export const processReminders = action({
     cityReminders: number;
   }> => {
     // Get leads that need reminders using explicit type annotations
-    const languageReminders: any[] = await ctx.runMutation(internal.nudges.getLanguageReminderLeads, {});
-    const phoneReminders: any[] = await ctx.runMutation(internal.nudges.getPhoneReminderLeads, {});
-    const cityReminders: any[] = await ctx.runMutation(internal.nudges.getCityReminderLeads, {});
+    const languageReminders = await ctx.runQuery(internal.nudges.getLanguageReminderLeads, {}) as LeadDoc[];
+    const phoneReminders = await ctx.runQuery(internal.nudges.getPhoneReminderLeads, {}) as LeadDoc[];
+    const cityReminders = await ctx.runQuery(internal.nudges.getCityReminderLeads, {}) as LeadDoc[];
 
     // Process language reminders
     for (const lead of languageReminders) {
