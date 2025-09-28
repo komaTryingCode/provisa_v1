@@ -26,8 +26,8 @@ const telegramWebhook = httpAction(async (ctx, request) => {
         firstName: user.first_name,
       });
 
-      // Send greeting
-      await ctx.runAction(api.bot.sendGreeting, {
+      // Send greeting with human-like typing behavior
+      await ctx.runAction(api.bot.sendGreetingWithTyping, {
         chatId: chatId,
         firstName: user.first_name,
       });

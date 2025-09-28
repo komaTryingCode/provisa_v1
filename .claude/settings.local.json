@@ -8,7 +8,8 @@
       "Bash(npx convex dev:*)",
       "Bash(curl:*)",
       "WebFetch(domain:docs.convex.dev)",
-      "Bash(npx convex data:*)"
+      "Bash(npx convex data:*)",
+      "Bash(npx convex env set OPENAI_API_KEY \"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\")"
     ],
     "deny": [],
     "ask": []
