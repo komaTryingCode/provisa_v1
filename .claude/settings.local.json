@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(claude mcp add-json convex '{\"\"type\"\":\"\"stdio\"\",\"\"command\"\":\"\"npx\"\",\"\"args\"\":[\"\"convex\"\",\"\"mcp\"\",\"\"start\"\"]}')",
-      "Bash(claude mcp get:*)"
+      "Bash(claude mcp get:*)",
+      "Bash(npx convex deploy:*)",
+      "Bash(npx convex run:*)",
+      "Bash(npx convex dev:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:docs.convex.dev)",
+      "Bash(npx convex data:*)"
     ],
     "deny": [],
     "ask": []
