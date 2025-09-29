@@ -84,22 +84,12 @@ export const handleStart = mutation({
         scheduledReminderIds: [],
       });
 
-      // If no language provided, schedule first language reminder for 90 seconds
-      if (!parsed.language) {
-        const jobId = await ctx.scheduler.runAfter(90000, internal.scheduler.sendLanguageReminderScheduled, {
-          leadId,
-          telegramId: args.telegramId,
-          chatId: args.telegramId,
-          attempt: 1,
-        });
-
-        // Update lead with scheduled job info
-        await ctx.db.patch(leadId, {
-          scheduledReminderIds: [jobId],
-          nextReminderAt: now + 90000,
-          activeReminderType: "language",
-        });
-      }
+      // Start workflow via our simple trigger system
+      await ctx.runMutation(internal.triggers.onNewLead, {
+        leadId,
+        telegramId: args.telegramId,
+        firstName: args.firstName,
+      });
 
       return { action: "created", leadId, language: parsed.language };
     }
@@ -122,40 +112,11 @@ export const handleLanguageSelection = mutation({
       throw new Error("Lead not found");
     }
 
-    // Cancel any scheduled language reminders
-    if (lead.scheduledReminderIds && lead.activeReminderType === "language") {
-      for (const jobId of lead.scheduledReminderIds) {
-        try {
-          await ctx.scheduler.cancel(jobId);
-        } catch (error) {
-          console.warn(`Failed to cancel language reminder job ${jobId}:`, error);
-        }
-      }
-    }
-
+    // Simple update - workflow handles all scheduling automatically
     await ctx.db.patch(lead._id, {
       language: args.language,
       conversationStage: "language_selection",
       lastContactAt: Date.now(),
-      scheduledReminderIds: [], // Clear old scheduled jobs
-      nextReminderAt: undefined,
-      activeReminderType: undefined,
-    });
-
-    // Schedule phone reminder for 2 minutes
-    const jobId = await ctx.scheduler.runAfter(120000, internal.scheduler.sendPhoneReminderScheduled, {
-      leadId: lead._id,
-      telegramId: args.telegramId,
-      chatId: args.telegramId,
-      language: args.language,
-      attempt: 1,
-    });
-
-    // Update with new scheduled job
-    await ctx.db.patch(lead._id, {
-      scheduledReminderIds: [jobId],
-      nextReminderAt: Date.now() + 120000,
-      activeReminderType: "phone",
     });
 
     return { leadId: lead._id };
@@ -179,46 +140,15 @@ export const handlePhoneCapture = mutation({
       throw new Error("Lead not found");
     }
 
-    // Cancel any scheduled phone reminders
-    if (lead.scheduledReminderIds && lead.activeReminderType === "phone") {
-      for (const jobId of lead.scheduledReminderIds) {
-        try {
-          await ctx.scheduler.cancel(jobId);
-        } catch (error) {
-          console.warn(`Failed to cancel phone reminder job ${jobId}:`, error);
-        }
-      }
-    }
-
     const normalizedPhone = normalizePhoneNumber(args.phoneNumber);
 
+    // Simple update - workflow handles progression automatically
     await ctx.db.patch(lead._id, {
       phoneNumber: normalizedPhone,
       status: "contacted",
       conversationStage: "qualification",
       lastContactAt: Date.now(),
-      scheduledReminderIds: [], // Clear old scheduled jobs
-      nextReminderAt: undefined,
-      activeReminderType: undefined,
     });
-
-    // Schedule city reminder for 2 minutes if we have language
-    if (lead.language) {
-      const jobId = await ctx.scheduler.runAfter(120000, internal.scheduler.sendCityReminderScheduled, {
-        leadId: lead._id,
-        telegramId: args.telegramId,
-        chatId: args.telegramId,
-        language: lead.language,
-        attempt: 1,
-      });
-
-      // Update with new scheduled job
-      await ctx.db.patch(lead._id, {
-        scheduledReminderIds: [jobId],
-        nextReminderAt: Date.now() + 120000,
-        activeReminderType: "city",
-      });
-    }
 
     return { leadId: lead._id, language: lead.language };
   },
@@ -240,29 +170,16 @@ export const handleCityCapture = mutation({
       throw new Error("Lead not found");
     }
 
-    // Cancel any scheduled city reminders
-    if (lead.scheduledReminderIds && lead.activeReminderType === "city") {
-      for (const jobId of lead.scheduledReminderIds) {
-        try {
-          await ctx.scheduler.cancel(jobId);
-        } catch (error) {
-          console.warn(`Failed to cancel city reminder job ${jobId}:`, error);
-        }
-      }
-    }
-
     // Set next follow-up to 7 days from now
     const nextFollowUp = Date.now() + (7 * 24 * 60 * 60 * 1000);
 
+    // Simple update - workflow completes automatically
     await ctx.db.patch(lead._id, {
       city: args.city,
       status: "interested",
       conversationStage: "interest_building",
       lastContactAt: Date.now(),
       nextFollowUpAt: nextFollowUp,
-      scheduledReminderIds: [], // Clear all scheduled jobs
-      nextReminderAt: undefined,
-      activeReminderType: undefined,
     });
 
     return { leadId: lead._id, language: lead.language };
