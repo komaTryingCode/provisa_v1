@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@convex-dev/workflow": "^0.2.6",
-    "convex": "^1.27.3",
+    "convex": "^1.27.4-alpha.0",
     "convex-helpers": "^0.1.104",
     "next": "15.5.4",
     "react": "19.1.0",

@@ -1,6 +1,6 @@
-// Karakalpak language messages
+﻿// Karakalpak language messages
 
-export default {
+const karakalpakMessages = {
   contactButton: "📞 Nomerdi bólishiw",
   askPhone: "Ótinemiz, telefon nomerińizdi jiberiń. 📱",
   askCity: "Qaysi qaladan jazıp atırsız?",
@@ -9,3 +9,5 @@ export default {
   reminderPhone: "Telefon nomerińizdi jiberiwdı unıtpań. ⏳",
   reminderCity: "Qay jerden ekenińizdi jazıp jiberiń, ótinemiz.",
 };
+
+export default karakalpakMessages;

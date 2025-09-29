@@ -2,6 +2,7 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { api } from "./_generated/api";
 import { isPhoneNumber } from "./messageUtils";
+import { answerCallbackQuery } from "./lib/telegram";
 import type { Doc } from "./_generated/dataModel";
 
 // Derive the Convex HTTP action context type without resorting to any
@@ -193,19 +194,7 @@ async function handleCallbackQuery(ctx: HttpCtx, callbackQuery: TelegramCallback
       chatId,
       language,
     });
-
-    const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        callback_query_id: callbackQuery.id,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to answer callback query (${response.status}): ${errorText}`);
-    }
+    await answerCallbackQuery({ callbackQueryId: callbackQuery.id });
   }
 }
 
@@ -224,3 +213,9 @@ http.route({
 });
 
 export default http;
+
+
+
+
+
+

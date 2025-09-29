@@ -1,6 +1,6 @@
-// Uzbek language messages
+﻿// Uzbek language messages
 
-export default {
+const uzbMessages = {
   contactButton: "📞 Raqamni ulashish",
   askPhone: "Iltimos, telefon raqamingizni yuboring. 📱",
   askCity: "Qaysi shahardan yozayapsiz?",
@@ -9,3 +9,5 @@ export default {
   reminderPhone: "Telefon raqamingizni yuborishni unutmang. ⏳",
   reminderCity: "Qayerdansiz deb yozib yuboring, iltimos.",
 };
+
+export default uzbMessages;

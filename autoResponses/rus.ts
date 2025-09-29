@@ -1,6 +1,6 @@
-// Russian language messages
+﻿// Russian language messages
 
-export default {
+const russianMessages = {
   contactButton: "📞 Поделиться контактом",
   askPhone: "Пожалуйста, отправьте свой номер телефона. 📱",
   askCity: "Из какого города вы пишете?",
@@ -9,3 +9,5 @@ export default {
   reminderPhone: "Не забудьте отправить свой номер телефона. ⏳",
   reminderCity: "Напишите, из какого вы города, пожалуйста.",
 };
+
+export default russianMessages;

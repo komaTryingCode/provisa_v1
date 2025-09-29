@@ -1,4 +1,4 @@
-// Bilingual (UZ + RU) messages used before language selection
+﻿// Bilingual (UZ + RU) messages used before language selection
 
 export const neutral = {
   greeting: (name?: string) => {

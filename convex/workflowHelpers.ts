@@ -4,11 +4,14 @@ import { leadArgs, telegramArgs } from "./lib/args";
 import { v } from "convex/values";
 import { neutral } from "../autoResponses/neutral";
 import { getMessagePack, buildLanguageKeyboard, buildContactKeyboard } from "./messageUtils";
+import type { Doc } from "./_generated/dataModel";
+import { sendMessage } from "./lib/telegram";
 
-// Simple query to get lead state
+export type LeadDoc = Doc<"leads">;
+
 export const getLeadState = internalQuery({
   args: { telegramId: v.number() },
-  handler: async (ctx, { telegramId }) => {
+  handler: async (ctx, { telegramId }): Promise<LeadDoc | null> => {
     return await ctx.db
       .query("leads")
       .filter((q) => q.eq(q.field("telegramId"), telegramId))
@@ -16,49 +19,38 @@ export const getLeadState = internalQuery({
   },
 });
 
-// Language reminder sender
 export const sendLanguageReminder = internalAction({
   args: {
     ...leadArgs,
     attempt: v.number(),
   },
-  handler: async (ctx, { telegramId, chatId, attempt }) => {
-    // Increment counter
+  handler: async (ctx, { leadId, telegramId, chatId, attempt }) => {
+    void leadId;
     await ctx.runMutation(internal.nudges.incrementReminderCounter, {
       telegramId,
       type: "language",
     });
 
-    // Choose message: attempt 1 = direct, attempt 2 = softer
-    const message = attempt === 1 ? neutral.reminderLanguage : neutral.reminderLanguageSoft;
+    const message =
+      attempt === 1 ? neutral.reminderLanguage : neutral.reminderLanguageSoft;
 
-    // Send to Telegram
-    const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: message,
-        reply_markup: buildLanguageKeyboard(),
-      }),
+    await sendMessage({
+      chatId,
+      text: message,
+      replyMarkup: buildLanguageKeyboard(),
     });
 
-    if (!response.ok) {
-      throw new Error(`Telegram API error: ${response.status}`);
-    }
-
-    return { status: "sent", attempt };
+    return { status: "sent", attempt } as const;
   },
 });
 
-// Phone reminder sender
 export const sendPhoneReminder = internalAction({
   args: {
     ...telegramArgs,
     attempt: v.number(),
   },
-  handler: async (ctx, { telegramId, chatId, language, attempt }) => {
-    // Increment counter
+  handler: async (ctx, { leadId, telegramId, chatId, language, attempt }) => {
+    void leadId;
     await ctx.runMutation(internal.nudges.incrementReminderCounter, {
       telegramId,
       type: "phone",
@@ -66,33 +58,23 @@ export const sendPhoneReminder = internalAction({
 
     const pack = getMessagePack(language);
 
-    // Send to Telegram
-    const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: pack.reminderPhone,
-        reply_markup: buildContactKeyboard(language),
-      }),
+    await sendMessage({
+      chatId,
+      text: pack.reminderPhone,
+      replyMarkup: buildContactKeyboard(language),
     });
 
-    if (!response.ok) {
-      throw new Error(`Telegram API error: ${response.status}`);
-    }
-
-    return { status: "sent", attempt, language };
+    return { status: "sent", attempt, language } as const;
   },
 });
 
-// City reminder sender
 export const sendCityReminder = internalAction({
   args: {
     ...telegramArgs,
     attempt: v.number(),
   },
-  handler: async (ctx, { telegramId, chatId, language, attempt }) => {
-    // Increment counter
+  handler: async (ctx, { leadId, telegramId, chatId, language, attempt }) => {
+    void leadId;
     await ctx.runMutation(internal.nudges.incrementReminderCounter, {
       telegramId,
       type: "city",
@@ -100,20 +82,19 @@ export const sendCityReminder = internalAction({
 
     const pack = getMessagePack(language);
 
-    // Send to Telegram
-    const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: pack.reminderCity,
-      }),
+    await sendMessage({
+      chatId,
+      text: pack.reminderCity,
     });
 
-    if (!response.ok) {
-      throw new Error(`Telegram API error: ${response.status}`);
-    }
-
-    return { status: "sent", attempt, language };
+    return { status: "sent", attempt, language } as const;
   },
 });
+
+
+
+
+
+
+
+
