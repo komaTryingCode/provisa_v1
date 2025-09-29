@@ -19,4 +19,7 @@ export const neutral = {
 
   reminderLanguage: `Iltimos, quyidagi tugmalardan birini bosib tilni tanlang. 🇺🇿
 Пожалуйста, выберите язык, нажав одну из кнопок. 🇷🇺`,
+
+  reminderLanguageSoft: `Biz sizga yordam berishga tayyormiz! Qulay vaqtingizda tilni tanlashingiz mumkin. 😊
+Мы готовы помочь! Выберите язык, когда будете готовы. 😊`,
 };

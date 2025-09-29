@@ -48,6 +48,15 @@ export default defineSchema({
 
     // Last interaction tracking for debounce
     lastStartTime: v.optional(v.number()),
+
+    // On-demand scheduling support
+    scheduledReminderIds: v.optional(v.array(v.id("_scheduled_functions"))),
+    nextReminderAt: v.optional(v.number()),
+    activeReminderType: v.optional(v.union(
+      v.literal("language"),
+      v.literal("phone"),
+      v.literal("city")
+    )),
   })
     .index("by_telegram_id", ["telegramId"])
     .index("by_status", ["status"])

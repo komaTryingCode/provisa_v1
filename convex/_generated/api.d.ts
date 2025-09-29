@@ -18,6 +18,7 @@ import type * as greenCardBot from "../greenCardBot.js";
 import type * as http from "../http.js";
 import type * as messageUtils from "../messageUtils.js";
 import type * as nudges from "../nudges.js";
+import type * as scheduler from "../scheduler.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   messageUtils: typeof messageUtils;
   nudges: typeof nudges;
+  scheduler: typeof scheduler;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,
